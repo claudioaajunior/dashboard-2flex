@@ -6,13 +6,44 @@
   <title>Dashboard Comercial 2 Flex</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f5; }
-    .login, .dashboard { max-width: 600px; margin: 80px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h2 { color: #0d47a1; text-align: center; }
-    label, input { display: block; width: 100%; margin-bottom: 10px; }
-    input[type="submit"] { background: #0d47a1; color: white; padding: 10px; border: none; cursor: pointer; font-weight: bold; }
-    #upload-section { display: none; }
-    #result { margin-top: 20px; white-space: pre-wrap; font-size: 14px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f0f2f5;
+    }
+    .login, .dashboard {
+      max-width: 600px;
+      margin: 80px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #0d47a1;
+      text-align: center;
+    }
+    label, input {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    input[type="submit"] {
+      background: #0d47a1;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #upload-section {
+      display: none;
+    }
+    #result {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -49,24 +80,40 @@
     const file = document.getElementById('fileInput').files[0];
     if (!file) return alert('Selecione um arquivo primeiro');
 
+    console.log('Arquivo selecionado:', file.name);
+
     const reader = new FileReader();
     reader.onload = function (e) {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
+      console.log('Workbook carregado:', workbook);
+
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      console.log('Dados da planilha:', jsonData);
 
       let total = 0;
       let colIndex = -1;
+
       for (let i = 0; i < jsonData.length; i++) {
         if (i === 0) {
-          colIndex = jsonData[i].findIndex(val => val && val.toString().toLowerCase().includes("venda"));
-        } else {
+          colIndex = jsonData[i].findIndex(val => val && val.toString().toLowerCase().includes(\"venda\"));
+          console.log('Índice da coluna de venda encontrado:', colIndex);
+        } else if (colIndex !== -1) {
           const val = parseFloat(jsonData[i][colIndex]);
           if (!isNaN(val)) total += val;
         }
       }
-      document.getElementById('result').textContent = `Total vendido: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+      if (colIndex === -1) {
+        alert(\"Coluna com 'venda' não encontrada na primeira linha da planilha\");
+        return;
+      }
+
+      document.getElementById('result').textContent =
+        `Total vendido: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+      console.log('Total calculado:', total);
     };
     reader.readAsArrayBuffer(file);
   }
