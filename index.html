@@ -2,118 +2,112 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Comercial 2 Flex</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
       background: #f0f2f5;
+      padding: 20px;
     }
-    .login, .dashboard {
-      max-width: 600px;
-      margin: 80px auto;
+    .container {
       background: white;
       padding: 30px;
+      max-width: 600px;
+      margin: auto;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     h2 {
-      color: #0d47a1;
       text-align: center;
+      color: #0d47a1;
     }
-    label, input {
-      display: block;
+    input[type="text"], input[type="password"], input[type="file"] {
       width: 100%;
-      margin-bottom: 10px;
+      padding: 10px;
+      margin: 10px 0;
+      background: #fcffcc;
+      border: 1px solid #ccc;
     }
     input[type="submit"] {
+      width: 100%;
+      padding: 15px;
       background: #0d47a1;
       color: white;
-      padding: 10px;
+      font-weight: bold;
       border: none;
       cursor: pointer;
-      font-weight: bold;
+      margin-top: 10px;
     }
-    #upload-section {
+    #dashboard, #resultado {
       display: none;
     }
-    #result {
+    #resultado {
       margin-top: 20px;
-      white-space: pre-wrap;
       font-size: 16px;
     }
   </style>
 </head>
 <body>
 
-<div class="login" id="login">
+<div class="container" id="login">
   <h2>Acesso ao Dashboard</h2>
-  <label for="user">Usuário</label>
-  <input type="text" id="user" placeholder="Digite o usuário">
-  <label for="pass">Senha</label>
-  <input type="password" id="pass" placeholder="Digite a senha">
-  <input type="submit" value="Entrar" onclick="login()">
+  <label>Usuário</label>
+  <input type="text" id="usuario" placeholder="Digite o usuário">
+  <label>Senha</label>
+  <input type="password" id="senha" placeholder="Digite a senha">
+  <input type="submit" value="Entrar" onclick="fazerLogin()">
 </div>
 
-<div class="dashboard" id="upload-section">
+<div class="container" id="dashboard">
   <h2>Upload de Arquivo de Faturamento</h2>
   <input type="file" id="fileInput" accept=".xlsx">
   <input type="submit" value="Analisar" onclick="analisarArquivo()">
-  <div id="result"></div>
+  <div id="resultado"></div>
 </div>
 
 <script>
-  function login() {
-    const u = document.getElementById('user').value;
-    const p = document.getElementById('pass').value;
-    if (u === 'Claudio' && p === 'Junior') {
-      document.getElementById('login').style.display = 'none';
-      document.getElementById('upload-section').style.display = 'block';
+  function fazerLogin() {
+    const user = document.getElementById("usuario").value;
+    const pass = document.getElementById("senha").value;
+
+    if (user === "Claudio" && pass === "Junior") {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
     } else {
-      alert('Usuário ou senha inválidos');
+      alert("Usuário ou senha incorretos");
     }
   }
 
   function analisarArquivo() {
-    const file = document.getElementById('fileInput').files[0];
-    if (!file) return alert('Selecione um arquivo primeiro');
-
-    console.log('Arquivo selecionado:', file.name);
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return alert("Selecione um arquivo!");
 
     const reader = new FileReader();
     reader.onload = function (e) {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      console.log('Workbook carregado:', workbook);
-
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-      console.log('Dados da planilha:', jsonData);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
       let total = 0;
       let colIndex = -1;
 
       for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
         if (i === 0) {
-          colIndex = jsonData[i].findIndex(val => val && val.toString().toLowerCase().includes(\"venda\"));
-          console.log('Índice da coluna de venda encontrado:', colIndex);
-        } else if (colIndex !== -1) {
-          const val = parseFloat(jsonData[i][colIndex]);
+          colIndex = row.findIndex(col => col && col.toString().toLowerCase().includes("venda"));
+        } else if (colIndex >= 0) {
+          const val = parseFloat(row[colIndex]);
           if (!isNaN(val)) total += val;
         }
       }
 
       if (colIndex === -1) {
-        alert(\"Coluna com 'venda' não encontrada na primeira linha da planilha\");
-        return;
+        document.getElementById("resultado").innerText = "❌ Coluna de venda não encontrada.";
+      } else {
+        document.getElementById("resultado").innerText = `✅ Total vendido: R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       }
-
-      document.getElementById('result').textContent =
-        `Total vendido: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-
-      console.log('Total calculado:', total);
     };
     reader.readAsArrayBuffer(file);
   }
